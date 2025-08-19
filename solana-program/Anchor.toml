@@ -5,10 +5,16 @@ anchor_version = "0.30.1"
 resolution = true
 skip-lint = true
 
+# You need to deploy your program first and replace this with the actual program ID
+# Run: anchor deploy --provider.cluster devnet
+# Then replace the program ID below with the one you get from deployment
 [programs.localnet]
 bonding_curve = "11111111111111111111111111111111"
 
 [programs.devnet]
+bonding_curve = "11111111111111111111111111111111"
+
+[programs.mainnet]
 bonding_curve = "11111111111111111111111111111111"
 
 [registry]
@@ -17,7 +23,9 @@ url = "https://api.apr.dev"
 [provider]
 cluster = "devnet"
 wallet = "./keypair.json"
-endpoint = "https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_RPC_API_KEY"
+# Replace YOUR_HELIUS_API_KEY with your actual Helius API key
+# Get one from: https://dev.helius.xyz/
+endpoint = "https://devnet.helius-rpc.com/?api-key=0db9012d-9281-4251-a54f-c780e58fc3d7"
 
 [test]
 startup_wait = 5000
@@ -38,11 +46,9 @@ program = "tests/fixtures/token.so"
 [workspace]
 members = ["programs/bonding-curve"]
 
-[programs.mainnet]
-bonding_curve = "11111111111111111111111111111111"
-
 [test.validator]
-url = "https://api.devnet.solana.com"
+# Use Helius RPC for tests as well
+url = "https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY"
 startup_wait = 90
 
 [[test.validator.clone]]
