@@ -48,7 +48,7 @@ members = ["programs/bonding-curve"]
 
 [test.validator]
 # Use Helius RPC for tests as well
-url = "https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_API_KEY"
+url = "https://devnet.helius-rpc.com/?api-key=0db9012d-9281-4251-a54f-c780e58fc3d7"
 startup_wait = 90
 
 [[test.validator.clone]]
