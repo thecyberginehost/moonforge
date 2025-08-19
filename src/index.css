@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Checker pattern for transparent backgrounds */
+.bg-checker-pattern {
+  background-image: 
+    linear-gradient(45deg, #ccc 25%, transparent 25%), 
+    linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #ccc 75%), 
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Pump.fun inspired dark theme */
+    --background: 235 39% 5%;
+    --foreground: 280 5% 96%;
+
+    --card: 235 39% 8%;
+    --card-foreground: 280 5% 96%;
+
+    --popover: 235 39% 8%;
+    --popover-foreground: 280 5% 96%;
+
+    /* Electric pump colors */
+    --primary: 280 100% 70%;
+    --primary-foreground: 235 39% 5%;
+
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 235 39% 5%;
+
+    --muted: 235 39% 15%;
+    --muted-foreground: 280 5% 65%;
+
+    --accent: 120 100% 50%;
+    --accent-foreground: 235 39% 5%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 280 5% 96%;
+
+    --border: 235 39% 20%;
+    --input: 235 39% 15%;
+    --ring: 280 100% 70%;
+
+    /* Pump gradients */
+    --gradient-pump: linear-gradient(135deg, hsl(280 100% 70%), hsl(180 100% 50%));
+    --gradient-electric: linear-gradient(45deg, hsl(280 100% 70%), hsl(320 100% 60%), hsl(180 100% 50%));
+    --gradient-neon: linear-gradient(90deg, hsl(120 100% 50%), hsl(180 100% 50%), hsl(280 100% 70%));
+    
+    /* Shadows and glows */
+    --shadow-neon: 0 0 20px hsl(280 100% 70% / 0.5);
+    --shadow-pump: 0 10px 30px hsl(280 100% 70% / 0.3);
+    --glow-electric: 0 0 40px hsl(180 100% 50% / 0.6);
+
+    --radius: 0.5rem;
+
+    /* Sidebar colors aligned with dark theme */
+    --sidebar-background: 235 39% 8%;
+    --sidebar-foreground: 280 5% 96%;
+    --sidebar-primary: 280 100% 70%;
+    --sidebar-primary-foreground: 235 39% 5%;
+    --sidebar-accent: 235 39% 15%;
+    --sidebar-accent-foreground: 280 5% 96%;
+    --sidebar-border: 235 39% 20%;
+    --sidebar-ring: 280 100% 70%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Pump animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pump {
+    animation: pump 0.6s ease-in-out;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .gradient-pump {
+    background: var(--gradient-pump);
+  }
+  
+  .gradient-electric {
+    background: var(--gradient-electric);
+  }
+  
+  .gradient-neon {
+    background: var(--gradient-neon);
+  }
+  
+  .shadow-neon {
+    box-shadow: var(--shadow-neon);
+  }
+  
+  .shadow-pump {
+    box-shadow: var(--shadow-pump);
+  }
+  
+  .glow-electric {
+    box-shadow: var(--glow-electric);
+  }
+
+  .text-gradient {
+    background: var(--gradient-electric);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(5deg); }
+  50% { transform: translateY(-10px) rotate(-5deg); }
+  75% { transform: translateY(-15px) rotate(3deg); }
+}
+
+@keyframes pump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes glow {
+  from { 
+    box-shadow: 0 0 20px hsl(280 100% 70% / 0.5);
+  }
+  to { 
+    box-shadow: 0 0 40px hsl(280 100% 70% / 0.8), 0 0 60px hsl(180 100% 50% / 0.3);
+  }
+}
