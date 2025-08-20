@@ -1,0 +1,92 @@
+project_id = "llvakqunvvheajwejpzm"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+enabled = true
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+port = 54323
+tenant_id = "realtime-dev"
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+port = 54325
+file_size_limit = "52428800"
+
+[auth]
+enabled = true
+port = 54326
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://llvakqunvvheajwejpzm.supabase.co"]
+jwt_expiry = 3600
+enable_signup = true
+enable_confirmations = false
+
+[functions.create-token]
+verify_jwt = false
+
+[functions.generate-ai-content]
+verify_jwt = false
+
+[functions.process-trading-fees]
+verify_jwt = false
+
+[functions.generate-platform-signature]
+verify_jwt = false
+
+[functions.get-priority-fee]
+verify_jwt = false
+
+[functions.helius-price-feed]
+verify_jwt = false
+
+[functions.helius-priority-fees]
+verify_jwt = false
+
+[functions.helius-parsed-transactions]
+verify_jwt = false
+
+[functions.helius-webhooks]
+verify_jwt = false
+
+[functions.mev-protection]
+verify_jwt = false
+
+[functions.auto-graduation]
+verify_jwt = false
+
+[functions.wrapper-trade]
+verify_jwt = false
+
+[functions.platform-trade]
+verify_jwt = false
+
+[functions.create-bonding-curve-token]
+verify_jwt = false

@@ -41,7 +41,7 @@ export const useTokenCreation = () => {
       console.log('Starting token creation with creator controls validated');
 
       // Step 1: Get transaction from backend
-      const { data, error } = await supabase.functions.invoke('create-bonding-curve-token', {
+    const { data, error } = await supabase.functions.invoke('create-token-user-pays', {
         body: {
           name: tokenData.name,
           symbol: tokenData.symbol,
