@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
 import { Sparkles, RefreshCw, Crown } from 'lucide-react';
-import { AIService } from '@/services/aiService';
+import aiService from '@/services/aiService';
 import { toast } from 'sonner';
 
 interface AISuggestionsProps {
@@ -17,17 +16,32 @@ interface AISuggestionsProps {
   isPremium?: boolean;
 }
 
-const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescriptionSelect, currentName, currentSymbol, isPremium = false }: AISuggestionsProps) => {
+interface TokenSuggestion {
+  name: string;
+  symbol: string;
+  description: string;
+  theme: string;
+  personality: string;
+}
+
+const AISuggestions = ({ 
+  onNameSelect, 
+  onSymbolSelect, 
+  onTokenSelect, 
+  onDescriptionSelect, 
+  currentName, 
+  currentSymbol, 
+  isPremium = false 
+}: AISuggestionsProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
-  const [suggestions, setSuggestions] = useState<{names: string[], symbols: string[]}>({
-    names: [],
-    symbols: []
-  });
+  const [suggestions, setSuggestions] = useState<TokenSuggestion[]>([]);
   const [selectedTheme, setSelectedTheme] = useState('');
   const [customTheme, setCustomTheme] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState<'meme' | 'serious' | 'degen' | 'creative'>('degen');
 
-  const themes = ['doge', 'pepe', 'moon', 'rocket'];
+  const themes = ['moon', 'pepe', 'doge', 'rocket', 'ai', 'gaming', 'defi'];
+  const styles: Array<'meme' | 'serious' | 'degen' | 'creative'> = ['meme', 'serious', 'degen', 'creative'];
 
   const generateSuggestions = async (theme?: string) => {
     if (!isPremium) {
@@ -38,36 +52,45 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
 
     setIsGenerating(true);
     try {
-      const response = await AIService.generateTokenNames(theme);
+      // Generate multiple suggestions with the selected theme and style
+      const suggestionPromises = [];
+      const count = isPremium ? 5 : 3; // More suggestions for premium users
       
-      // If we got back both names and symbols (new format), use them directly
-      if (Array.isArray(response) && typeof response[0] === 'string') {
-        // Old format - just names
-        const names = response;
-        setSuggestions(prev => ({ ...prev, names }));
-        
-        // Generate symbols for each name individually
-        const symbols = [];
-        for (const name of names) {
-          const nameSymbols = await AIService.generateTokenSymbols(name);
-          symbols.push(nameSymbols[0]); // Take the first/best symbol for each name
-        }
-        setSuggestions(prev => ({ ...prev, symbols }));
+      for (let i = 0; i < count; i++) {
+        suggestionPromises.push(
+          aiService.generateTokenSuggestion({
+            theme: theme || customTheme || 'random',
+            style: selectedStyle,
+            prompt: customTheme || undefined
+          })
+        );
+      }
+
+      const generatedSuggestions = await Promise.all(suggestionPromises);
+      
+      // Filter out duplicates by name
+      const uniqueSuggestions = generatedSuggestions.filter(
+        (suggestion, index, self) =>
+          index === self.findIndex((s) => s.name === suggestion.name)
+      );
+
+      setSuggestions(uniqueSuggestions);
+      
+      if (uniqueSuggestions.length > 0) {
+        toast.success(`Generated ${uniqueSuggestions.length} unique suggestions!`);
       } else {
-        // New format - matched pairs should come directly from the service
-        const names = response;
-        setSuggestions(prev => ({ ...prev, names }));
-        
-        // Generate matching symbols for all names at once
-        const symbols = [];
-        for (const name of names) {
-          const nameSymbols = await AIService.generateTokenSymbols(name);
-          symbols.push(nameSymbols[0]);
-        }
-        setSuggestions(prev => ({ ...prev, symbols }));
+        toast.error('Failed to generate unique suggestions. Please try again.');
       }
     } catch (error) {
+      console.error('Generation error:', error);
       toast.error('Failed to generate suggestions');
+      
+      // Provide fallback suggestions
+      const fallbackSuggestion = await aiService.generateTokenSuggestion({
+        theme: theme || 'meme',
+        style: selectedStyle
+      });
+      setSuggestions([fallbackSuggestion]);
     } finally {
       setIsGenerating(false);
     }
@@ -87,16 +110,41 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
 
     setIsGeneratingDescription(true);
     try {
-      const description = await AIService.generateTokenDescription(currentName, currentSymbol);
-      if (onDescriptionSelect) {
-        onDescriptionSelect(description);
+      // Generate a full suggestion based on current name/symbol
+      const suggestion = await aiService.generateTokenSuggestion({
+        prompt: `Create a description for a token called ${currentName} with symbol ${currentSymbol}`,
+        style: selectedStyle
+      });
+      
+      if (onDescriptionSelect && suggestion.description) {
+        onDescriptionSelect(suggestion.description);
         toast.success('AI description generated!');
       }
     } catch (error) {
+      console.error('Description generation error:', error);
       toast.error('Failed to generate description');
+      
+      // Provide a fallback description
+      const fallbackDescription = `${currentName} ($${currentSymbol}) is the next revolutionary token on Solana. Join the community and ride the wave to the moon! 🚀`;
+      if (onDescriptionSelect) {
+        onDescriptionSelect(fallbackDescription);
+      }
     } finally {
       setIsGeneratingDescription(false);
     }
+  };
+
+  const selectSuggestion = (suggestion: TokenSuggestion) => {
+    if (onTokenSelect) {
+      onTokenSelect(suggestion.name, suggestion.symbol);
+    } else {
+      onNameSelect(suggestion.name);
+      onSymbolSelect(suggestion.symbol);
+    }
+    if (onDescriptionSelect && suggestion.description) {
+      onDescriptionSelect(suggestion.description);
+    }
+    toast.success('Token details applied!');
   };
 
   return (
@@ -105,7 +153,7 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="text-accent" size={16} />
-            <span className="text-sm font-medium">AI Token Suggestions</span>
+            <span className="text-sm font-medium">AI Token Generator</span>
           </div>
           {isPremium && (
             <div className="flex items-center gap-1 text-xs bg-gradient-electric text-black px-2 py-1 rounded-full">
@@ -113,6 +161,25 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
               Unlimited
             </div>
           )}
+        </div>
+
+        {/* Style Selection */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Generation Style:</p>
+          <div className="flex gap-2 flex-wrap">
+            {styles.map((style) => (
+              <Button
+                key={style}
+                variant={selectedStyle === style ? "electric" : "outline"}
+                size="sm"
+                onClick={() => setSelectedStyle(style)}
+                disabled={isGenerating}
+                className="text-xs"
+              >
+                {style.charAt(0).toUpperCase() + style.slice(1)}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Theme Selection */}
@@ -161,44 +228,47 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
           </div>
         </div>
 
-        {/* Token Suggestions - Name/Symbol Pairs */}
-        {suggestions.names.length > 0 && (
+        {/* Token Suggestions */}
+        {suggestions.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Suggested Token Names & Symbols:</p>
-            <div className="space-y-2">
-              {suggestions.names.map((name, index) => (
-                <div key={name} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (onTokenSelect && suggestions.symbols[index]) {
-                        onTokenSelect(name, suggestions.symbols[index]);
-                      } else {
-                        onNameSelect(name);
-                      }
-                    }}
-                    className="text-sm font-medium flex-1 justify-start hover:bg-transparent"
-                  >
-                    {name}
-                  </Button>
-                  <span className="text-muted-foreground">→</span>
-                  {suggestions.symbols[index] && (
+            <p className="text-sm font-medium">Generated Tokens:</p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {suggestions.map((suggestion, index) => (
+                <div 
+                  key={`${suggestion.name}-${index}`} 
+                  className="p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all cursor-pointer border border-transparent hover:border-accent/20"
+                  onClick={() => selectSuggestion(suggestion)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{suggestion.name}</span>
+                        <span className="text-xs font-mono text-muted-foreground">${suggestion.symbol}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {suggestion.description}
+                      </p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-xs px-2 py-0.5 bg-accent/10 rounded-full">
+                          {suggestion.theme}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full">
+                          {suggestion.personality}
+                        </span>
+                      </div>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (onTokenSelect) {
-                          onTokenSelect(name, suggestions.symbols[index]);
-                        } else {
-                          onSymbolSelect(suggestions.symbols[index]);
-                        }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectSuggestion(suggestion);
                       }}
-                      className="text-sm font-mono hover:bg-transparent"
+                      className="text-xs"
                     >
-                      ${suggestions.symbols[index]}
+                      Use This
                     </Button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -221,13 +291,13 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
             ) : (
               <>
                 <Sparkles className="mr-2" size={16} />
-                Generate Token Suggestions
-                {!isPremium && <span className="ml-1 text-xs">(0.01 SOL)</span>}
+                Generate Token Ideas
+                {!isPremium && <span className="ml-1 text-xs opacity-70">(0.01 SOL)</span>}
               </>
             )}
           </Button>
 
-          {onDescriptionSelect && (
+          {onDescriptionSelect && currentName && currentSymbol && (
             <Button
               onClick={generateDescription}
               disabled={isGeneratingDescription || !currentName || !currentSymbol}
@@ -242,13 +312,31 @@ const AISuggestions = ({ onNameSelect, onSymbolSelect, onTokenSelect, onDescript
               ) : (
                 <>
                   <Sparkles className="mr-2" size={16} />
-                  Generate Description
-                  {!isPremium && <span className="ml-1 text-xs">(0.01 SOL)</span>}
+                  Generate Description for {currentName}
+                  {!isPremium && <span className="ml-1 text-xs opacity-70">(0.01 SOL)</span>}
                 </>
               )}
             </Button>
           )}
+
+          {suggestions.length > 0 && (
+            <Button
+              onClick={() => setSuggestions([])}
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground"
+            >
+              Clear Suggestions
+            </Button>
+          )}
         </div>
+
+        {/* AI Stats (for debugging, remove in production) */}
+        {import.meta.env.DEV && (
+          <div className="text-xs text-muted-foreground pt-2 border-t">
+            <p>AI Stats: {aiService.getStats ? `${aiService.getStats().requestCount} requests, ${aiService.getStats().cacheSize} cached` : 'N/A'}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
