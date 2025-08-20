@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, Mint, TokenAccount};
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("11111111111111111111111111111111");
+declare_id!("Aa3p5mYeEdG1YCiiqf24CXYkRAcRq7hcuQT3pZa9L779");
 
 #[program]
 pub mod bonding_curve {
