@@ -1,7 +1,6 @@
 [workspace]
-members = [
-    "programs/*"
-]
+members = ["programs/*"]
+resolver = "2"  # Added to fix the resolver warning
 
 [profile.release]
 overflow-checks = true

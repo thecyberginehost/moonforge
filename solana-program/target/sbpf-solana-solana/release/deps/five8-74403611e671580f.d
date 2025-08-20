@@ -1,0 +1,11 @@
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/libfive8-74403611e671580f.rmeta: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/decode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/encode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/unlikely.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/../README.md
+
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/libfive8-74403611e671580f.rlib: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/decode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/encode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/unlikely.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/../README.md
+
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/five8-74403611e671580f.d: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/decode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/encode.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/unlikely.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/../README.md
+
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/lib.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/decode.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/encode.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/unlikely.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/five8-0.2.1/src/../README.md:

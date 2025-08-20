@@ -1,13 +1,10 @@
 [toolchain]
-anchor_version = "0.30.1"
+anchor_version = "0.31.1"
 
 [features]
 resolution = true
 skip-lint = true
 
-# You need to deploy your program first and replace this with the actual program ID
-# Run: anchor deploy --provider.cluster devnet
-# Then replace the program ID below with the one you get from deployment
 [programs.localnet]
 bonding_curve = "11111111111111111111111111111111"
 
@@ -22,37 +19,10 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "./keypair.json"
-# Replace YOUR_HELIUS_API_KEY with your actual Helius API key
-# Get one from: https://dev.helius.xyz/
+wallet = "/home/filthy/.config/solana/id.json"
 endpoint = "https://devnet.helius-rpc.com/?api-key=0db9012d-9281-4251-a54f-c780e58fc3d7"
 
 [test]
 startup_wait = 5000
 shutdown_wait = 2000
 upgradeable = false
-
-[scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-[[test.genesis]]
-address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-program = "tests/fixtures/metadata.so"
-
-[[test.genesis]]
-address = "PwDiXFxQsGra4sFFTT8r1QWRMd4vfumiWC1jfWNfdYT"
-program = "tests/fixtures/token.so"
-
-[workspace]
-members = ["programs/bonding-curve"]
-
-[test.validator]
-# Use Helius RPC for tests as well
-url = "https://devnet.helius-rpc.com/?api-key=0db9012d-9281-4251-a54f-c780e58fc3d7"
-startup_wait = 90
-
-[[test.validator.clone]]
-address = "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
-
-[[test.validator.clone]]
-address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"

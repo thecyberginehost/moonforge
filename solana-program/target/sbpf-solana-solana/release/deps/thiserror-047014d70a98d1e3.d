@@ -1,0 +1,11 @@
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/libthiserror-047014d70a98d1e3.rmeta: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/aserror.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/display.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/provide.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/var.rs
+
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/libthiserror-047014d70a98d1e3.rlib: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/aserror.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/display.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/provide.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/var.rs
+
+/mnt/c/Users/Filthy/Desktop/moonforge/solana-program/target/sbpf-solana-solana/release/deps/thiserror-047014d70a98d1e3.d: /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/lib.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/aserror.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/display.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/provide.rs /home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/var.rs
+
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/lib.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/aserror.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/display.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/provide.rs:
+/home/filthy/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-2.0.15/src/var.rs:
