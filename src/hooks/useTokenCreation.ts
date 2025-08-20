@@ -1,3 +1,6 @@
+// FILE: src/hooks/useTokenCreation.ts
+// FIXED: Now calls create-token-user-pays instead of create-real-token
+
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -39,9 +42,10 @@ export const useTokenCreation = () => {
       }
 
       console.log('Starting token creation with creator controls validated');
+      console.log('Using create-token-user-pays function - User pays 0.02 SOL');
 
-      // Step 1: Get transaction from backend
-    const { data, error } = await supabase.functions.invoke('create-real-token', {
+      // Step 1: Get transaction from backend - FIXED TO USE CORRECT FUNCTION
+      const { data, error } = await supabase.functions.invoke('create-token-user-pays', {
         body: {
           name: tokenData.name,
           symbol: tokenData.symbol,
@@ -49,13 +53,16 @@ export const useTokenCreation = () => {
           imageUrl: tokenData.image,
           telegram: tokenData.telegram_url,
           twitter: tokenData.x_url,
+          website: '', // Add if you have website field
           creatorWallet: walletAddress,
           initialBuyIn,
-          signedTransaction: null, // Will be updated when we have payment integration
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Token creation error:', error);
+        throw error;
+      }
 
       // Step 2: If backend returns a transaction, sign and send it
       if (data.requiresSignature && data.transaction) {
@@ -64,23 +71,34 @@ export const useTokenCreation = () => {
         }
 
         try {
-          console.log('Deserializing transaction...');
+          console.log('Transaction requires signature. Fees breakdown:', data.fees);
+          console.log('User will pay:', {
+            creation: data.fees.creation_fee,
+            gas: data.fees.gas_estimate,
+            total: data.fees.total_user_cost
+          });
+          console.log('Platform receives:', {
+            creation: data.fees.platform_receives_creation,
+            trading: data.fees.platform_trading_fee,
+            boosts: data.fees.platform_boost_fees
+          });
+
           // Deserialize transaction
-          const transactionBuffer = new Uint8Array(data.transaction);
+          const transactionBuffer = Buffer.from(data.transaction, 'base64');
           const transaction = Transaction.from(transactionBuffer);
           
-          console.log('Signing transaction...');
+          console.log('Prompting wallet to sign transaction...');
           // Sign transaction with user's wallet
           const signedTransaction = await signTransaction(transaction);
           
-          console.log('Sending transaction...');
+          console.log('Sending transaction to blockchain...');
           // Send transaction
           const signature = await sendTransaction(signedTransaction, connection);
           
           console.log('Transaction sent successfully:', signature);
           
-          // Wait for confirmation before declaring success
-          console.log('Waiting for transaction confirmation...');
+          // Wait for confirmation
+          console.log('Waiting for blockchain confirmation...');
           const confirmation = await connection.confirmTransaction(signature, 'confirmed');
           
           if (confirmation.value.err) {
@@ -88,7 +106,9 @@ export const useTokenCreation = () => {
             throw new Error(`Blockchain transaction failed: ${JSON.stringify(confirmation.value.err)}`);
           }
 
-          console.log('Transaction confirmed successfully');
+          console.log('✅ Token created successfully!');
+          console.log('✅ User paid 0.02 SOL creation fee to platform');
+          console.log('✅ Platform will receive 1% on all future trades');
           
           // Return the confirmation result along with token data
           return {
@@ -98,10 +118,10 @@ export const useTokenCreation = () => {
           };
           
         } catch (txError) {
-          console.error('Transaction error:', txError);
+          console.error('Transaction signing/sending error:', txError);
           // Check if it's a partial success (token created but transaction pending)
           if (data.token) {
-            console.log('Token was created but transaction may be pending');
+            console.log('Token record created but transaction may be pending');
             return {
               ...data,
               signature: null,
@@ -114,7 +134,7 @@ export const useTokenCreation = () => {
         }
       }
 
-      // If no transaction required, return the data directly
+      // If no transaction required (shouldn't happen with real tokens), return the data
       return data;
     },
     onSuccess: (data) => {
@@ -126,12 +146,17 @@ export const useTokenCreation = () => {
           ? "Token created successfully! 🎉" 
           : "Token created! Transaction may still be processing...";
           
+        // Show fee information
+        if (data.fees) {
+          message += ` You paid ${data.fees.creation_fee} SOL for creation.`;
+        }
+          
         // Add initial investment info if applicable
         if (data.initialBuyIn > 0) {
           if (data.initialTradeResult?.error) {
             message += ` Initial investment of ${data.initialBuyIn} SOL failed: ${data.initialTradeResult.error}`;
             toast.warning(message);
-          } else {
+          } else if (data.initialTradeResult?.success) {
             message += ` Initial investment of ${data.initialBuyIn} SOL completed!`;
             toast.success(message);
           }
@@ -139,7 +164,7 @@ export const useTokenCreation = () => {
           toast.success(message);
         }
         
-        // Invalidate related queries
+        // Invalidate related queries to refresh UI
         queryClient.invalidateQueries({ queryKey: ['tokens'] });
         queryClient.invalidateQueries({ queryKey: ['recent-tokens'] });
         queryClient.invalidateQueries({ queryKey: ['creator-tokens'] });
@@ -156,6 +181,9 @@ export const useTokenCreation = () => {
         // Navigate to token success page
         if (data.token?.id) {
           navigate(`/token-success/${data.token.id}`);
+        } else if (data.token?.mint_address) {
+          // Fallback to mint address if ID not available
+          navigate(`/token/${data.token.mint_address}`);
         }
       } else {
         toast.info("Token creation initiated. Please check back in a moment.");
@@ -193,6 +221,11 @@ export const useTokenCreation = () => {
     setIsCreating(true);
     
     try {
+      console.log('Creating token with fee structure:');
+      console.log('- User pays: 0.02 SOL creation fee');
+      console.log('- Platform receives: 100% of creation fee');
+      console.log('- Platform receives: 1% on all future trades');
+      
       await createToken.mutateAsync({
         tokenData,
         walletAddress: publicKey.toString(),
