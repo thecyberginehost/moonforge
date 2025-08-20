@@ -1,122 +1,331 @@
+// FILE PATH: /src/services/aiService.ts
+// Enhanced AI service combining your structure with additional features
 
-import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+export interface TokenSuggestion {
+  name: string;
+  symbol: string;
+  description: string;
+  theme: string;
+  personality: string;
+  image?: string;
+  twitter?: string;
+  telegram?: string;
+  website?: string;
+}
 
-// AI service for token creation - now using real AI APIs
-export class AIService {
-  // AI Token Name Generator
-  static async generateTokenNames(theme?: string): Promise<string[]> {
+export interface GenerateTokenParams {
+  prompt?: string;
+  theme?: string;
+  style?: 'meme' | 'serious' | 'degen' | 'creative';
+  includeLinks?: boolean;
+}
+
+class AIService {
+  private apiEndpoint: string;
+  private cache: Map<string, TokenSuggestion>;
+  private requestCount: number = 0;
+  private lastRequestTime: number = 0;
+
+  constructor() {
+    // Use the edge function endpoint
+    this.apiEndpoint = '/api/ai-generate';
+    this.cache = new Map();
+  }
+
+  /**
+   * Generate a token suggestion using AI with caching and rate limiting
+   */
+  async generateTokenSuggestion(params: GenerateTokenParams = {}): Promise<TokenSuggestion> {
+    // Simple client-side rate limiting (1 request per 2 seconds)
+    const now = Date.now();
+    if (now - this.lastRequestTime < 2000) {
+      console.log('Rate limited, returning cached or fallback suggestion');
+      return this.getCachedOrFallback(params);
+    }
+    this.lastRequestTime = now;
+
+    // Check cache first
+    const cacheKey = JSON.stringify(params);
+    if (this.cache.has(cacheKey)) {
+      console.log('Returning cached suggestion');
+      return this.cache.get(cacheKey)!;
+    }
+
     try {
-      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
-        body: {
-          type: 'suggestions',
-          prompt: theme || 'creative meme cryptocurrency',
-          context: 'Generate catchy token names with matching ticker symbols'
+      this.requestCount++;
+      console.log(`Making AI request #${this.requestCount}`);
+
+      const response = await fetch(this.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          prompt: params.prompt || '',
+          theme: params.theme || 'meme',
+          style: params.style || 'degen',
+        }),
+      });
+
+      if (!response.ok) {
+        // If AI endpoint fails, try using Supabase Edge Function as backup
+        return await this.trySupabaseBackup(params);
+      }
+
+      const suggestion = await response.json();
+      
+      // Enhance with additional fields if requested
+      if (params.includeLinks) {
+        suggestion.twitter = this.generateTwitterHandle(suggestion.symbol);
+        suggestion.telegram = this.generateTelegramLink(suggestion.symbol);
+        suggestion.website = this.generateWebsite(suggestion.symbol);
+      }
+
+      // Cache the result
+      this.cache.set(cacheKey, suggestion);
+      
+      return suggestion;
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      return this.getCachedOrFallback(params);
+    }
+  }
+
+  /**
+   * Try Supabase Edge Function as backup (if you set it up)
+   */
+  private async trySupabaseBackup(params: GenerateTokenParams): Promise<TokenSuggestion> {
+    try {
+      // If you have a Supabase Edge Function set up
+      const { data, error } = await window.supabase.functions.invoke('generate-token', {
+        body: params
       });
 
       if (error) throw error;
-      
-      // The function should return both names and symbols, but we only return names here
-      // The symbols will be generated separately or accessed via a different method
-      return data?.names?.slice(0, 5) || ['ViralCoin', 'MemeForge', 'PumpMaster'];
+      return data;
     } catch (error) {
-      console.error('AI name generation error:', error);
-      toast.error('AI service unavailable, using fallback names');
-      
-      const themes = {
-        doge: ['SuperDoge', 'MegaDoge', 'DogeMoon'],
-        pepe: ['GigaPepe', 'PepeMoon', 'UltraPepe'],
-        moon: ['MoonShot', 'LunarToken', 'MoonForged'],
-        rocket: ['RocketFuel', 'BlastOff', 'ThrusterX'],
-        default: ['ViralCoin', 'MemeForge', 'PumpMaster']
+      console.error('Supabase backup also failed:', error);
+      return this.getCachedOrFallback(params);
+    }
+  }
+
+  /**
+   * Get cached suggestion or fallback
+   */
+  private getCachedOrFallback(params: GenerateTokenParams): TokenSuggestion {
+    // Try to return any cached suggestion first
+    if (this.cache.size > 0) {
+      const cached = Array.from(this.cache.values());
+      return cached[Math.floor(Math.random() * cached.length)];
+    }
+    
+    // Otherwise return fallback
+    return this.getFallbackSuggestion(params.style || 'degen');
+  }
+
+  /**
+   * Generate multiple unique token suggestions
+   */
+  async generateBatch(count: number = 3, baseParams: GenerateTokenParams = {}): Promise<TokenSuggestion[]> {
+    const suggestions: TokenSuggestion[] = [];
+    const usedNames = new Set<string>();
+
+    for (let i = 0; i < count; i++) {
+      // Add variation to avoid duplicates
+      const params = {
+        ...baseParams,
+        prompt: baseParams.prompt ? `${baseParams.prompt} (variation ${i + 1})` : undefined
       };
+
+      const suggestion = await this.generateTokenSuggestion(params);
       
-      const selectedTheme = theme?.toLowerCase() || 'default';
-      const themeNames = themes[selectedTheme as keyof typeof themes] || themes.default;
-      return themeNames.slice(0, 3);
+      // Ensure uniqueness
+      if (!usedNames.has(suggestion.name)) {
+        suggestions.push(suggestion);
+        usedNames.add(suggestion.name);
+      } else {
+        // If duplicate, try to modify it
+        suggestion.name = `${suggestion.name} ${this.getRandomSuffix()}`;
+        suggestion.symbol = `${suggestion.symbol}${i + 1}`;
+        suggestions.push(suggestion);
+      }
+
+      // Small delay between requests
+      if (i < count - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
+
+    return suggestions;
   }
 
-  // AI Symbol Generator
-  static async generateTokenSymbols(name: string): Promise<string[]> {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
-        body: {
-          type: 'suggestions',
-          prompt: `Generate ticker symbols for token named: ${name}`,
-          context: 'Create short 3-4 character symbols'
+  /**
+   * Get trending themes based on time of day/season
+   */
+  getTrendingThemes(): string[] {
+    const hour = new Date().getHours();
+    const month = new Date().getMonth();
+
+    const themes = ['meme', 'defi', 'gaming', 'ai', 'nft'];
+
+    // Add time-based themes
+    if (hour >= 0 && hour < 6) {
+      themes.push('moon', 'night', 'vampire');
+    } else if (hour >= 6 && hour < 12) {
+      themes.push('coffee', 'sunrise', 'gm');
+    } else if (hour >= 18) {
+      themes.push('party', 'degen', 'casino');
+    }
+
+    // Add seasonal themes
+    if (month === 11 || month === 0) {
+      themes.push('christmas', 'santa', 'snow');
+    } else if (month >= 5 && month <= 7) {
+      themes.push('summer', 'beach', 'sun');
+    } else if (month === 9) {
+      themes.push('halloween', 'spooky', 'pumpkin');
+    }
+
+    return themes;
+  }
+
+  /**
+   * Generate social media links
+   */
+  private generateTwitterHandle(symbol: string): string {
+    return `https://twitter.com/${symbol.toLowerCase()}coin`;
+  }
+
+  private generateTelegramLink(symbol: string): string {
+    return `https://t.me/${symbol.toLowerCase()}_official`;
+  }
+
+  private generateWebsite(symbol: string): string {
+    return `https://${symbol.toLowerCase()}.moon`;
+  }
+
+  /**
+   * Get random suffix for uniqueness
+   */
+  private getRandomSuffix(): string {
+    const suffixes = ['Pro', 'Max', 'Plus', 'X', '2.0', 'Ultra', 'Prime', 'Elite'];
+    return suffixes[Math.floor(Math.random() * suffixes.length)];
+  }
+
+  /**
+   * Get fallback suggestions
+   */
+  private getFallbackSuggestion(style: string): TokenSuggestion {
+    const fallbacks = {
+      meme: [
+        {
+          name: 'Bonk Killer',
+          symbol: 'BONKK',
+          description: 'The ultimate Bonk killer has arrived on Solana!',
+          theme: 'meme',
+          personality: 'aggressive',
         },
-      });
-
-      if (error) throw error;
-      
-      return data?.symbols?.slice(0, 3) || [name.substring(0, 4).toUpperCase()];
-    } catch (error) {
-      console.error('AI symbol generation error:', error);
-      
-      const nameUpper = name.toUpperCase();
-      return [
-        nameUpper.substring(0, 4),
-        nameUpper.substring(0, 3) + 'X',
-        nameUpper.substring(0, 3) + '2',
-      ];
-    }
-  }
-
-  // AI Description Generator
-  static async generateTokenDescription(name: string, symbol: string): Promise<string> {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-ai-content', {
-        body: {
-          type: 'description',
-          prompt: `Generate a compelling description for a cryptocurrency token named "${name}" with symbol "${symbol}". Make it engaging, viral-worthy, and highlight community aspects, innovation, and potential.`,
-          context: 'Create a description that will attract investors and community members'
+        {
+          name: 'Pepe Unchained',
+          symbol: 'PEPEU',
+          description: 'Pepe breaks free from Ethereum gas fees!',
+          theme: 'meme',
+          personality: 'rebellious',
         },
-      });
+        {
+          name: 'Wojak Wins',
+          symbol: 'WOJAK',
+          description: 'Finally, Wojak gets his win. We\'re all gonna make it!',
+          theme: 'meme',
+          personality: 'hopeful',
+        },
+      ],
+      serious: [
+        {
+          name: 'Yield Protocol',
+          symbol: 'YIELD',
+          description: 'Automated yield farming across Solana DeFi',
+          theme: 'defi',
+          personality: 'professional',
+        },
+        {
+          name: 'Oracle Network',
+          symbol: 'ORCL',
+          description: 'Decentralized price feeds for Solana',
+          theme: 'infrastructure',
+          personality: 'technical',
+        },
+      ],
+      degen: [
+        {
+          name: 'APE IN NOW',
+          symbol: 'APE',
+          description: 'Don\'t think, just ape! YOLO into the next 100x!',
+          theme: 'gambling',
+          personality: 'reckless',
+        },
+        {
+          name: 'Ponzi Scheme',
+          symbol: 'PONZI',
+          description: 'The most transparent ponzi on Solana - get in early!',
+          theme: 'degen',
+          personality: 'honest',
+        },
+        {
+          name: 'Rug Pull Ready',
+          symbol: 'RUGG',
+          description: 'Pre-rugged for your convenience. Can only go up!',
+          theme: 'degen',
+          personality: 'sarcastic',
+        },
+      ],
+      creative: [
+        {
+          name: 'Glitch in Matrix',
+          symbol: 'GLITCH',
+          description: 'Reality.exe has stopped working. Profit from the chaos!',
+          theme: 'cyberpunk',
+          personality: 'mysterious',
+        },
+        {
+          name: 'Time Traveler',
+          symbol: 'TIME',
+          description: 'Bought Bitcoin in 2010. Now launching on Solana.',
+          theme: 'scifi',
+          personality: 'wise',
+        },
+      ],
+    };
 
-      if (error) throw error;
-      
-      return data?.description || `${name} (${symbol}) is a revolutionary community-driven token designed to reshape the future of decentralized finance. Built by degens, for degens, this token combines the power of memes with serious utility. Join the movement and watch your investments moon! 🚀`;
-    } catch (error) {
-      console.error('AI description generation error:', error);
-      
-      // Fallback descriptions based on token characteristics
-      const fallbackDescriptions = [
-        `${name} (${symbol}) is a community-driven meme token with diamond hands energy. Built for the degen community who believes in the power of collective moon missions. Join the revolution! 🚀💎`,
-        `Welcome to ${name} (${symbol}) - where innovation meets pure degen energy! This token is designed to break barriers and create generational wealth for early believers. Are you ready to moon? 🌙`,
-        `${name} (${symbol}) combines viral meme culture with cutting-edge blockchain technology. Created by the community, for the community. It's not just a token, it's a movement toward financial freedom! 💰`,
-        `The future is here with ${name} (${symbol})! This revolutionary token empowers its holders through community governance and viral growth mechanics. Get in early and watch magic happen! ✨`,
-        `${name} (${symbol}) is more than just another crypto - it's a lifestyle. Built for those who dare to dream big and hold strong. Together, we're not just going to the moon, we're conquering the universe! 🚀🌌`
-      ];
-      
-      return fallbackDescriptions[Math.floor(Math.random() * fallbackDescriptions.length)];
-    }
+    const styleOptions = fallbacks[style as keyof typeof fallbacks] || fallbacks.degen;
+    return styleOptions[Math.floor(Math.random() * styleOptions.length)];
   }
 
-  // AI Viral Tweet Generator
-  static async generateViralTweets(tokenName: string, tokenSymbol: string): Promise<string[]> {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const tweets = [
-      `🚀 Just forged ${tokenName} ($${tokenSymbol}) on @MoonForge! This is going PARABOLIC! 🌙 #MoonForge #${tokenSymbol} #SolanaGems`,
-      `💎 ${tokenName} ($${tokenSymbol}) is the next 1000x gem! Forged with pure degen energy on MoonForge 🔥 #WAGMI #${tokenSymbol}`,
-      `🌙 Moon mission activated! ${tokenName} ($${tokenSymbol}) just launched on MoonForge. Get in before we hit Uranus! 🚀 #${tokenSymbol}Mania`
-    ];
-    
-    return tweets;
+  /**
+   * Clear cache (useful for testing)
+   */
+  clearCache(): void {
+    this.cache.clear();
+    this.requestCount = 0;
   }
 
-  // AI Market Sentiment
-  static async getMarketSentiment(): Promise<{ sentiment: 'bullish' | 'bearish' | 'neutral', confidence: number, recommendation: string }> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const sentiments = [
-      { sentiment: 'bullish' as const, confidence: 0.85, recommendation: '🟢 Perfect time to launch! Market is pumping hard!' },
-      { sentiment: 'neutral' as const, confidence: 0.65, recommendation: '🟡 Decent timing. Good opportunity for unique tokens.' },
-      { sentiment: 'bearish' as const, confidence: 0.75, recommendation: '🔴 Risky timing, but contrarian plays can moon harder!' }
-    ];
-    
-    return sentiments[Math.floor(Math.random() * sentiments.length)];
+  /**
+   * Get statistics
+   */
+  getStats(): { requestCount: number; cacheSize: number } {
+    return {
+      requestCount: this.requestCount,
+      cacheSize: this.cache.size,
+    };
   }
 }
+
+// Create singleton instance
+const aiService = new AIService();
+
+// For debugging in development
+if (import.meta.env.DEV) {
+  (window as any).aiService = aiService;
+}
+
+export default aiService;
