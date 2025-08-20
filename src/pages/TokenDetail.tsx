@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -229,21 +228,21 @@ const TokenDetail = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-{/* Main Content - Bonding Curve Visualization */}
-<div className="lg:col-span-2 space-y-6">
-  {/* Bonding Curve Visualization */}
-  <BondingCurveVisualization 
-    currentSolRaised={token.sol_raised || 0}
-    tokensSold={token.tokens_sold || 0}
-    tokenSymbol={token.symbol}
-  />
-  
-  {/* ADD THIS: Achievement System */}
-  <TokenAchievements tokenId={token.id} />
-  
-  {/* Trading Chart */}
-  <TradingChart tokenId={token.id} />
-</div>
+          {/* Main Content - Bonding Curve Visualization */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Bonding Curve Visualization */}
+            <BondingCurveVisualization 
+              currentSolRaised={token.sol_raised || 0}
+              tokensSold={token.tokens_sold || 0}
+              tokenSymbol={token.symbol}
+            />
+            
+            {/* Achievement System */}
+            <TokenAchievements tokenId={token.id} />
+            
+            {/* Trading Chart */}
+            <TradingChart tokenId={token.id} />
+
             {/* Key Metrics */}
             <Card>
               <CardHeader>
@@ -325,6 +324,7 @@ const TokenDetail = () => {
             
             {/* Trading Activity */}
             <TokenTradingActivity tokenId={token.id} />
+            
             {/* Contract Info */}
             <Card>
               <CardHeader>
