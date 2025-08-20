@@ -142,16 +142,11 @@ export const useTokenAchievements = (tokenId: string) => {
 
           if (achievement) {
             setShowNewAchievement(achievement);
-            toast.success(
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{achievement.icon}</span>
-                <div>
-                  <div className="font-bold">Achievement Unlocked!</div>
-                  <div className="text-sm">{achievement.name}</div>
-                </div>
-              </div>,
-              { duration: 5000 }
-            );
+            // Use string message instead of JSX
+            toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
+              description: achievement.description,
+              duration: 5000
+            });
             
             // Refetch to update the list
             refetch();
