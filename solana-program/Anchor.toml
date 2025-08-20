@@ -9,7 +9,7 @@ skip-lint = true
 bonding_curve = "11111111111111111111111111111111"
 
 [programs.devnet]
-bonding_curve = "11111111111111111111111111111111"
+bonding_curve = "Aa3p5mYeEdG1YCiiqf24CXYkRAcRq7hcuQT3pZa9L779"
 
 [programs.mainnet]
 bonding_curve = "11111111111111111111111111111111"
