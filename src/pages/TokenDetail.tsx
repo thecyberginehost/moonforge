@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
+import { TokenAchievements } from '@/components/TokenAchievements';
 import { 
   ArrowLeft,
   ExternalLink,
@@ -228,22 +229,21 @@ const TokenDetail = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - Bonding Curve Visualization */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Bonding Curve Visualization */}
-            <BondingCurveVisualization 
-              currentSolRaised={token.sol_raised || 0}
-              tokensSold={token.tokens_sold || 0}
-              tokenSymbol={token.symbol}
-            />
-
-            {/* Trading Chart */}
-            <TradingChart 
-              tokenId={token.id}
-              tokenName={token.name}
-              currentPrice={token.price}
-            />
-
+{/* Main Content - Bonding Curve Visualization */}
+<div className="lg:col-span-2 space-y-6">
+  {/* Bonding Curve Visualization */}
+  <BondingCurveVisualization 
+    currentSolRaised={token.sol_raised || 0}
+    tokensSold={token.tokens_sold || 0}
+    tokenSymbol={token.symbol}
+  />
+  
+  {/* ADD THIS: Achievement System */}
+  <TokenAchievements tokenId={token.id} />
+  
+  {/* Trading Chart */}
+  <TradingChart tokenId={token.id} />
+</div>
             {/* Key Metrics */}
             <Card>
               <CardHeader>
