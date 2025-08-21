@@ -1,5 +1,5 @@
 // FILE: supabase/functions/create-token-user-pays/index.ts
-// REAL TOKEN CREATION - User pays, platform receives fees, creates actual Solana tokens
+// REAL TOKEN CREATION - User pays, platform receives fees, creates actual Solana tokens with proper metadata
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.4";
@@ -75,9 +75,13 @@ serve(async (req) => {
       : `https://api.${network}.solana.com`;
     const connection = new Connection(rpcUrl, "confirmed");
 
-    // Platform wallet
+    // Platform wallet - uses real address from env or falls back to placeholder
+    const platformWalletAddress = Deno.env.get("PLATFORM_WALLET_ADDRESS");
+    if (!platformWalletAddress || platformWalletAddress === "11111111111111111111111111111111") {
+      console.warn("WARNING: Using placeholder platform wallet. Set PLATFORM_WALLET_ADDRESS in environment!");
+    }
     const PLATFORM_WALLET = new PublicKey(
-      Deno.env.get("PLATFORM_WALLET_ADDRESS") || "11111111111111111111111111111111"
+      platformWalletAddress || "11111111111111111111111111111111"
     );
 
     // Constants
@@ -150,20 +154,28 @@ serve(async (req) => {
       METADATA_PROGRAM_ID
     );
 
-    // 6. Prepare metadata URI (you should upload to Arweave/IPFS in production)
-    const metadataUri = await uploadMetadata({
-      name: name.substring(0, 32),
-      symbol: symbol.substring(0, 10),
-      description,
-      image: imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${symbol}`,
-      external_url: website || `https://moonforge.io/token/${mintKeypair.publicKey.toString()}`,
-      attributes: [],
-      properties: {
-        files: [{ uri: imageUrl, type: "image/png" }],
-        category: "meme",
-        creators: [{ address: creatorWallet, share: 100 }],
+    // 6. Upload metadata properly to Supabase Storage
+    const metadataUri = await uploadMetadata(
+      {
+        name: name.substring(0, 32),
+        symbol: symbol.substring(0, 10),
+        description: description || `${name} - Created on MoonForge`,
+        image: imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${symbol}`,
+        external_url: website || `https://moonforge.io/token/${mintKeypair.publicKey.toString()}`,
+        attributes: [],
+        properties: {
+          files: [{ 
+            uri: imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${symbol}`, 
+            type: "image/png" 
+          }],
+          category: "meme",
+          creators: [{ address: creatorWallet, share: 100 }],
+        },
       },
-    });
+      supabase
+    );
+
+    console.log("Metadata URI:", metadataUri);
 
     // 7. Create metadata account
     transaction.add(
@@ -273,7 +285,7 @@ serve(async (req) => {
       name,
       symbol: symbol.toUpperCase(),
       description: description || `${name} - Created on MoonForge`,
-      image_url: imageUrl,
+      image_url: imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${symbol}`,
       twitter_url: twitter,
       telegram_url: telegram,
       website_url: website,
@@ -335,6 +347,7 @@ serve(async (req) => {
 
     console.log("✅ Real token created:", mintKeypair.publicKey.toString());
     console.log("✅ Bonding curve initialized:", bondingCurvePDA.toString());
+    console.log("✅ Metadata uploaded:", metadataUri);
     console.log("✅ View on Explorer:", `https://explorer.solana.com/address/${mintKeypair.publicKey.toString()}?cluster=${network}`);
 
     return new Response(
@@ -344,6 +357,7 @@ serve(async (req) => {
         transaction: serializedTransaction.toString('base64'),
         mintAddress: mintKeypair.publicKey.toString(),
         bondingCurveAddress: bondingCurvePDA.toString(),
+        metadataUri: metadataUri,
         message: "Real token creation transaction ready",
         explorer: `https://explorer.solana.com/address/${mintKeypair.publicKey.toString()}?cluster=${network}`,
         fees: {
@@ -378,31 +392,64 @@ serve(async (req) => {
   }
 });
 
-// Helper function to upload metadata
-async function uploadMetadata(metadata: any): Promise<string> {
-  // For testing, return a mock URI
-  // In production, you should:
-  // 1. Upload to Arweave using Bundlr/Irys
-  // 2. Or upload to IPFS using nft.storage or Pinata
-  // 3. Or store in Supabase Storage and return the public URL
+// Helper function to upload metadata to Supabase Storage
+async function uploadMetadata(metadata: any, supabase: any): Promise<string> {
+  console.log("Uploading metadata to Supabase Storage:", metadata);
   
-  console.log("Metadata to upload:", metadata);
-  
-  // Temporary solution - you can store in Supabase Storage:
-  // const { data, error } = await supabase.storage
-  //   .from('token-metadata')
-  //   .upload(`${metadata.symbol}-${Date.now()}.json`, JSON.stringify(metadata), {
-  //     contentType: 'application/json',
-  //     upsert: false
-  //   });
-  // 
-  // if (data) {
-  //   const { data: { publicUrl } } = supabase.storage
-  //     .from('token-metadata')
-  //     .getPublicUrl(data.path);
-  //   return publicUrl;
-  // }
-  
-  // For now, return a placeholder that will at least work
-  return `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/metadata.json`;
+  try {
+    // First, check if the bucket exists, if not create it
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some((b: any) => b.name === 'token-metadata');
+    
+    if (!bucketExists) {
+      console.log("Creating token-metadata bucket...");
+      const { error: createError } = await supabase.storage.createBucket('token-metadata', {
+        public: true,
+        allowedMimeTypes: ['application/json'],
+      });
+      
+      if (createError && !createError.message.includes('already exists')) {
+        console.error("Failed to create bucket:", createError);
+        // Fall back to data URI
+        return createDataUri(metadata);
+      }
+    }
+    
+    // Upload metadata JSON to Supabase Storage
+    const fileName = `${metadata.symbol.toLowerCase()}-${Date.now()}.json`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('token-metadata')
+      .upload(fileName, JSON.stringify(metadata, null, 2), {
+        contentType: 'application/json',
+        cacheControl: '31536000', // Cache for 1 year
+        upsert: false
+      });
+    
+    if (uploadError) {
+      console.error("Failed to upload metadata to storage:", uploadError);
+      // Fall back to data URI
+      return createDataUri(metadata);
+    }
+    
+    // Get the public URL for the uploaded metadata
+    const { data: { publicUrl } } = supabase.storage
+      .from('token-metadata')
+      .getPublicUrl(uploadData.path);
+    
+    console.log("✅ Metadata uploaded successfully:", publicUrl);
+    return publicUrl;
+    
+  } catch (error) {
+    console.error("Error in metadata upload:", error);
+    // Fall back to data URI if storage fails
+    return createDataUri(metadata);
+  }
+}
+
+// Fallback: Create a data URI with embedded metadata
+function createDataUri(metadata: any): string {
+  console.log("Using data URI fallback for metadata");
+  const base64Metadata = btoa(JSON.stringify(metadata));
+  const dataUri = `data:application/json;base64,${base64Metadata}`;
+  return dataUri;
 }
