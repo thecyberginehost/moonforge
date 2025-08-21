@@ -199,40 +199,7 @@ serve(async (req) => {
       )
     );
 
-    // 8. Create creator's token account
-    const creatorTokenAccount = await getAssociatedTokenAddress(
-      mintKeypair.publicKey,
-      creatorPubkey,
-      false,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    transaction.add(
-      createAssociatedTokenAccountInstruction(
-        creatorPubkey,
-        creatorTokenAccount,
-        creatorPubkey,
-        mintKeypair.publicKey,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
-
-    // 9. Mint 20% to creator
-    const creatorSupply = Math.floor(TOTAL_SUPPLY * 0.2 * Math.pow(10, DECIMALS));
-    transaction.add(
-      createMintToInstruction(
-        mintKeypair.publicKey,
-        creatorTokenAccount,
-        creatorPubkey,
-        creatorSupply,
-        [],
-        TOKEN_PROGRAM_ID
-      )
-    );
-
-    // 10. Create bonding curve token account
+    // 8. Create bonding curve token account (100% goes here - pump.fun style!)
     const bondingCurveTokenAccount = await getAssociatedTokenAddress(
       mintKeypair.publicKey,
       bondingCurvePDA,
@@ -252,20 +219,20 @@ serve(async (req) => {
       )
     );
 
-    // 11. Mint 80% to bonding curve
-    const bondingCurveSupply = Math.floor(TOTAL_SUPPLY * 0.8 * Math.pow(10, DECIMALS));
+    // 9. Mint 100% to bonding curve (pump.fun style - fair launch!)
+    const totalSupplyWithDecimals = TOTAL_SUPPLY * Math.pow(10, DECIMALS);
     transaction.add(
       createMintToInstruction(
         mintKeypair.publicKey,
         bondingCurveTokenAccount,
         creatorPubkey,
-        bondingCurveSupply,
+        totalSupplyWithDecimals,
         [],
         TOKEN_PROGRAM_ID
       )
     );
 
-    // 12. Initialize bonding curve in YOUR deployed program
+    // 10. Initialize bonding curve in YOUR deployed program
     const initializeCurveInstruction = new TransactionInstruction({
       programId: new PublicKey(BONDING_CURVE_PROGRAM_ID),
       keys: [
@@ -278,7 +245,7 @@ serve(async (req) => {
         0, // Instruction discriminator for initialize_curve
         ...new BN(30 * LAMPORTS_PER_SOL).toArray('le', 8), // virtual_sol_reserves
         ...new BN(1073000000 * Math.pow(10, DECIMALS)).toArray('le', 8), // virtual_token_reserves  
-        ...new BN(bondingCurveSupply).toArray('le', 8), // bonding_curve_supply
+        ...new BN(totalSupplyWithDecimals).toArray('le', 8), // bonding_curve_supply (100%)
       ]),
     });
     
@@ -316,7 +283,7 @@ serve(async (req) => {
       virtual_sol_reserves: 30,
       virtual_token_reserves: 1073000000,
       real_sol_reserves: 0,
-      real_token_reserves: TOTAL_SUPPLY * 0.8,
+      real_token_reserves: TOTAL_SUPPLY, // 100% in bonding curve
       tokens_sold: 0,
       
       // Fee configuration
@@ -327,8 +294,8 @@ serve(async (req) => {
       // Token configuration
       decimals: DECIMALS,
       total_supply: TOTAL_SUPPLY,
-      creator_allocation: TOTAL_SUPPLY * 0.2,
-      bonding_curve_allocation: TOTAL_SUPPLY * 0.8,
+      creator_allocation: 0, // Creator gets 0 tokens upfront (fair launch!)
+      bonding_curve_allocation: TOTAL_SUPPLY, // 100% to bonding curve
       
       // Initial state
       current_price: 0.00000003,
