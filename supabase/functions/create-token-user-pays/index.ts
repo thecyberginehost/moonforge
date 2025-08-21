@@ -23,7 +23,7 @@ import {
 } from "https://esm.sh/@solana/spl-token@0.4.8";
 import {
   createCreateMetadataAccountV3Instruction,
-  PROGRAM_ID as METADATA_PROGRAM_ID,
+  MPL_TOKEN_METADATA_PROGRAM_ID as METADATA_PROGRAM_ID,
 } from "https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.2.1";
 import BN from "https://esm.sh/bn.js@5.2.1";
 
