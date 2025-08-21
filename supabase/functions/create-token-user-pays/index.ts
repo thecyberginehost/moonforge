@@ -21,10 +21,13 @@ import {
   createMintToInstruction,
   getAssociatedTokenAddress,
 } from "https://esm.sh/@solana/spl-token@0.4.8";
+// Just import the function
 import {
   createCreateMetadataAccountV3Instruction,
-  MPL_TOKEN_METADATA_PROGRAM_ID as METADATA_PROGRAM_ID,
 } from "https://esm.sh/@metaplex-foundation/mpl-token-metadata@2.13.0";
+
+// Then define METADATA_PROGRAM_ID yourself
+const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 import BN from "https://esm.sh/bn.js@5.2.1";
 
 const corsHeaders = {
