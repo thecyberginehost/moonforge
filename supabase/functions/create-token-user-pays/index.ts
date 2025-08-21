@@ -177,39 +177,40 @@ serve(async (req) => {
 
     console.log("Metadata URI:", metadataUri);
 
-    // 7. Create metadata account
-    transaction.add(
-      createCreateMetadataAccountV3Instruction(
-        {
-          metadata: metadataPDA,
-          mint: mintKeypair.publicKey,
-          mintAuthority: creatorPubkey,
-          payer: creatorPubkey,
-          updateAuthority: creatorPubkey,
-        },
-        {
-          createMetadataAccountArgsV3: {
-            data: {
-              name: name.substring(0, 32),
-              symbol: symbol.substring(0, 10),
-              uri: metadataUri,
-              sellerFeeBasisPoints: 100, // 1%
-              creators: [
-                {
-                  address: creatorPubkey,
-                  verified: true,
-                  share: 100,
-                },
-              ],
-              collection: null,
-              uses: null,
+// Create metadata account
+transaction.add(
+  createCreateMetadataAccountV3Instruction(
+    {
+      metadata: metadataPDA,
+      mint: mintKeypair.publicKey,
+      mintAuthority: creatorPubkey,
+      payer: creatorPubkey,
+      updateAuthority: creatorPubkey,
+    },
+    {
+      createMetadataAccountArgsV3: {
+        data: {
+          name: name.substring(0, 32),
+          symbol: symbol.substring(0, 10),
+          uri: metadataUri,
+          sellerFeeBasisPoints: 100,
+          creators: [
+            {
+              address: creatorPubkey,
+              verified: true,
+              share: 100,
             },
-            isMutable: true,
-            collectionDetails: null,
-          },
-        }
-      )
-    );
+          ],
+          collection: null,
+          uses: null,
+        },
+        isMutable: true,
+        collectionDetails: null,
+      },
+    },
+    METADATA_PROGRAM_ID // Pass the program ID as third parameter
+  )
+);
 
     // 8. Create bonding curve token account (100% goes here - pump.fun style!)
     const bondingCurveTokenAccount = await getAssociatedTokenAddress(
