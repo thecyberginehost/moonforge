@@ -24,7 +24,7 @@ import {
 import {
   createCreateMetadataAccountV3Instruction,
   MPL_TOKEN_METADATA_PROGRAM_ID as METADATA_PROGRAM_ID,
-} from "https://esm.sh/@metaplex-foundation/mpl-token-metadata@@2.13.0";
+} from "https://esm.sh/@metaplex-foundation/mpl-token-metadata@2.13.0";
 import BN from "https://esm.sh/bn.js@5.2.1";
 
 const corsHeaders = {
